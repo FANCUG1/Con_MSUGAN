@@ -65,7 +65,7 @@ def training(x, block):
 
 
 def upsample(x, size):
-    x_up = F.upsample(input=x, size=size, mode='bilinear', align_corners=True)
+    x_up = F.upsample(input=x, size=size, mode='bicubic', align_corners=True)
     return x_up
 
 
@@ -135,7 +135,9 @@ class GrowingGenerator(nn.Module):
 
                 x_prev_out_2 = x_prev_out_1 + noise[idx] * noise_amp[idx]
 
-                x_prev_out = training(x_prev_out_2, block)
+                x_prev = training(x_prev_out_2, block)
+
+                x_prev_out = x_prev + x_prev_out_1
 
             else:
                 x_prev_out_1 = upsample(x_prev_out, size=[real_shapes[idx][2], real_shapes[idx][3]])
@@ -157,13 +159,15 @@ class Discriminator(nn.Module):
             nn.Conv2d(in_channels=3, out_channels=dim, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
             nn.LeakyReLU(0.2),
             nn.Conv2d(in_channels=dim, out_channels=2 * dim, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
+            nn.BatchNorm2d(2 * dim),
             nn.LeakyReLU(0.2),
             nn.Conv2d(in_channels=2 * dim, out_channels=4 * dim, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
+            nn.BatchNorm2d(4 * dim),
             nn.LeakyReLU(0.2),
             nn.Conv2d(in_channels=4 * dim, out_channels=8 * dim, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
+            nn.BatchNorm2d(8 * dim),
             nn.LeakyReLU(0.2),
             nn.Conv2d(in_channels=8 * dim, out_channels=1, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
-            nn.LeakyReLU(0.2),
         )
 
     def forward(self, x):
